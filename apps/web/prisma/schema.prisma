@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  email           String        @unique
+  password        String
+  avatar          String?
+  coverImage      String? 
+  orgOwnerID      String[]      @db.ObjectId
+  org             Org[]         @relation(fields: [orgOwnerID], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  StoryManager    Story[]       @relation("storymanger")
+  storyEmployeeID String[]      @db.ObjectId
+  StoryEmplyees   Story[]       @relation(fields: [storyEmployeeID], references: [id])
+  TaskSender      Task[]        @relation("TaskSender")
+  TaskReciver     Task[]        @relation("taskReciver")
+  FriendsListUser FriendsList?
+  friendId        String[]      @db.ObjectId
+  friends         FriendsList[] @relation("friends", fields: [friendId], references: [id])
+  OrgEmployeesId  String[]      @db.ObjectId
+  OrgEmployess    Org[]         @relation("employees", fields: [OrgEmployeesId], references: [id])
+  posts           Post[]
+  comments        comment[]
+  likes           like[]
+   messages        Message[]
+   notificationREcivers  Notification[]
+   
+  @@map("users")
+}
+
+model Story {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  orgId          String[] @db.ObjectId
+  org            Org[]    @relation(fields: [orgId], references: [id])
+  isCompleted    Boolean  @default(false)
+  name           String
+  socketRoomName String   @unique
+  managerId      String?  @db.ObjectId
+  manager        User?    @relation("storymanger", fields: [managerId], references: [id])
+  employeeID     String[] @db.ObjectId
+  employees      User[]   @relation(fields: [employeeID], references: [id])
+  Tasks          Task[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("stories")
+}
+
+model Org {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  storyId        String[] @db.ObjectId
+  story          Story[]  @relation(fields: [storyId], references: [id])
+  name           String
+  bio            String?
+  headline       String?
+  email          String
+  dbOrgName      String
+  socketRoomName String
+  avatar         String? // url
+  coverImage     String? // url
+  employeeID     String[] @db.ObjectId
+  employees      User[]   @relation("employees", fields: [employeeID], references: [id])
+  ownerID        String[] @db.ObjectId
+  owner          User[]   @relation(fields: [ownerID], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  posts          Post[]
+
+  @@map("organizations")
+}
+
+model Task {
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  title              String
+  content            String
+  isCompleted        Boolean  @default(false)
+  storyID            String   @db.ObjectId
+  story              Story    @relation(fields: [storyID], references: [id])
+  senderId           String   @db.ObjectId
+  sender             User?    @relation("TaskSender", fields: [senderId], references: [id])
+  reciverId          String   @db.ObjectId
+  reciver            User?    @relation("taskReciver", fields: [reciverId], references: [id])
+  TaskSocketRoomName String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("tasks")
+}
+
+model FriendsList {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique @db.ObjectId
+  friendsID String[] @db.ObjectId
+  friends   User[]   @relation("friends", fields: [friendsID], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("friends")
+}
+
+model Post {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  postOwner   User   @relation(fields: [postOwnerID], references: [id])
+  postOwnerID String @db.ObjectId
+  title       String?
+  photo       String? // cloudinary url
+  postOrg     Org?     @relation(fields: [postOrgID] , references: [id])
+  postOrgID   String? @db.ObjectId
+  isActive    Boolean  @default(true)
+  videoFile    String? // cloudinary url
+  videoDuration String?
+  likes        like[] 
+  comments   comment[]
+  impressions  Int   @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("Posts")
+}
+
+model like{
+  id String  @id @default(auto()) @map("_id") @db.ObjectId
+  postID String? @db.ObjectId
+  post Post? @relation(fields: [postID] , references: [id])
+  commentID  String? @db.ObjectId
+  comment    comment? @relation(fields: [commentID] , references: [id])
+   messageID  String? @db.ObjectId
+  message    Message? @relation(fields: [messageID] , references: [id])
+  likedByID String @db.ObjectId
+  likedBy  User @relation(fields: [likedByID] , references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("likes")
+}
+
+model comment {
+  id  String @id @default(auto()) @map("_id") @db.ObjectId
+  content  String
+  postID String @db.ObjectId
+  post   Post @relation(fields: [postID] , references: [id])
+  authorId  String @db.ObjectId
+  author   User  @relation(fields: [authorId] , references: [id]) 
+  likes    like[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("comments")
+}
+model Message {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  senderId String @db.ObjectId
+   sender User @relation(fields: [senderId] , references: [id])
+   likes  like[]
+   content String 
+    GroupName String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("messages")
+}
+
+model Notification {
+  id  String @id @default(auto()) @map("_id") @db.ObjectId
+  recieverID String @db.ObjectId
+  reciever User @relation(fields: [recieverID] , references: [id])
+  content String
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
